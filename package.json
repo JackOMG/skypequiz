@@ -1,0 +1,19 @@
+{
+  "name": "ingquiz",
+  "version": "1.0.0",
+  "description": "This is the ING Quiz bot",
+  "main": "app.js",
+  "dependencies": {
+    "botbuilder": "^3.15.0",
+    "mongodb": "",
+    "mysql": "",
+    "restify": "^4.3.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "author": "Jack Smies",
+  "license": "ISC"
+}
