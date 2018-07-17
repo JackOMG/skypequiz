@@ -4,7 +4,7 @@ const MongoClient = require('mongodb').MongoClient;
 
 
 global.db=null; //database handle
-MongoClient.connect(process.env.mongoConnect||"mongodb://localhost:27017", function(err, database) {
+MongoClient.connect(process.env.mongoConnect||"mongodb://localhost:27017", { useNewUrlParser: true }, function(err, database) {
   if(!err) {
     console.log("DB connected");
 	db = database;
