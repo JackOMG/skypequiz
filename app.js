@@ -4,10 +4,11 @@ const MongoClient = require('mongodb').MongoClient;
 
 
 global.db=null; //database handle
-MongoClient.connect(process.env.mongoConnect||"mongodb://localhost:27017", function(err, database) {
+//MongoClient.connect(process.env.mongoConnect||"mongodb://localhost:27017", function(err, database) {
+MongoClient.connect(process.env.mongoConnect, function(err, client) {
   if(!err) {
     console.log("DB connected");
-	db = database;
+	db = client.db('gaming');
   } else console.log(err.stack);
 });
 
@@ -35,14 +36,6 @@ var inMemoryStorage = new builder.MemoryBotStorage();
 
 var bot = new builder.UniversalBot(connector).set('storage', inMemoryStorage); // Register in memory storage
 
-// send simple notification
-function sendProactiveMessage(message) {
-  var msg = new builder.Message().address(savedAddress);
-  msg.text(message);
-  msg.textLocale('en-US');
-  bot.send(msg);
-}
-
 var savedAddress;
 var arr;
 var quizQuestion;
@@ -50,11 +43,12 @@ var correctAnswer;
 
 server.post('/api/messages', connector.listen());
 
-// Do GET this endpoint to delivey a notification
+// example of custom web api
 server.get('/api/CustomWebApi', (req, res, next) => {
-	
-    sendProactiveMessage('triggered');
-    res.send('triggered');
+	if (saveAddress) {
+		bot.beginDialog(savedAddress, '*:askQuestion');
+		res.send('triggered');
+	} else res.send('No group address saved');
     next();
   }
 );
@@ -78,35 +72,6 @@ bot.dialog('newquiz',
 bot.dialog('askquiz', 
     function (session) {
 		// retrieve a quiz question from the database
-		/*
-		db.collection('quizquestion').find().sort({"date":-1}).limit(1).function(err, quiz) {
-			if (err) console.log(err)
-			if (quiz) {
-				arr = [quiz.CA, quiz.WA1, quiz.WA2, quiz.WA3];
-				quizQuestion = quiz.question;
-				correctAnswer = quiz.CA;
-				bot.beginDialog(savedAddress, '*:askQuestion');
-			} else {
-				session.send('No questions in the database');
-			}
-		}
-			
-		db.collection('quizquestion').findOne({}, null, {sort: {date: -1}}, function(err, quiz) {
-			if (err) console.log(err)
-			if (quiz) {
-				console.log('Quiz DB:%j', quiz)
-				arr = [quiz.CA, quiz.WA1, quiz.WA2, quiz.WA3];
-				quizQuestion = quiz.question;
-				correctAnswer = quiz.CA;
-				qid = quiz._id
-				// update the lastasked date
-				db.collection('quizquestion').update({_id:  qid}, {lastAsked: (new Date()).getTime()});
-				bot.beginDialog(savedAddress, '*:askQuestion');
-			} else {
-				session.send('No questions in the database');
-			}
-		})
-*/
 		db.collection('quizquestion').findAndModify(
 			{}, // query
 			[['lastAsked','asc']],  // sort order
@@ -167,6 +132,8 @@ bot.dialog('createQuizQuestion', [
 			WA2: session.userData.WA2,
 			WA3: session.userData.WA3
 			})
+			
+		// temp solution to fill global vars as session storage doesnt seem to carry over the savedAddress
 		arr = [session.userData.CA, session.userData.WA1, session.userData.WA2, session.userData.WA3];
 		quizQuestion = session.userData.quizQuestion;
 		correctAnswer = session.userData.CA;
@@ -197,7 +164,7 @@ bot.dialog('askQuestion', [
 		db.collection('user').findAndModify(
 			{userId: session.message.user.id}, // query
 			{},  // sort order
-			{$inc: {score: points}},
+			{$inc: {score: points, tries: +1}},
 			{},
 			function(err, object) {
 				if (err){
