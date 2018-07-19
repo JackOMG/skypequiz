@@ -61,6 +61,18 @@ bot.dialog('setgroup',
 	}
 ).triggerAction({matches: /^setgroup$/i});
 
+bot.dialog('mygroup', 
+    function (session) {
+		savedAddress = session.message.address;
+		session.send('address saved');
+		console.log('Quiz address:'+savedAddress);
+		db.collection('mygroup').insertOne({userId: session.message.address.user.id, 
+			address: session.message.address,
+			date:(new Date()).getTime()
+			})
+	}
+).triggerAction({matches: /^mygroup$/i});
+
 
 bot.dialog('newquiz', 
     function (session) {
